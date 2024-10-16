@@ -1,63 +1,48 @@
 import FirebaseAuth
+import SwiftUI
 
 class AuthViewModel: ObservableObject {
+    @Published var isAuthenticated = false
     @Published var email = ""
     @Published var password = ""
-    @Published var signUpError: String?
     @Published var isEmailVerified = false
-    @Published var isAuthenticated = false
+    @Published var signUpError: String?
 
-    init() {
-        checkAuthentication()
-    }
-
-    func checkAuthentication() {
-        if let user = Auth.auth().currentUser {
-            isAuthenticated = user.isEmailVerified
-        } else {
-            isAuthenticated = false
-        }
-    }
-
-    func signUp(completion: @escaping (Error?) -> Void) {
-        Auth.auth().createUser(withEmail: email, password: password) { result, error in
+    func signIn() {
+        Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
             if let error = error {
-                self.signUpError = error.localizedDescription
-                completion(error) // Pass the error back
+                print("Error signing in: \(error.localizedDescription)")
             } else if let user = result?.user {
-                user.sendEmailVerification { error in
-                    if let error = error {
-                        self.signUpError = error.localizedDescription
-                        completion(error)
+                user.reload { error in
+                    self?.isEmailVerified = user.isEmailVerified
+                    if user.isEmailVerified {
+                        self?.isAuthenticated = true
                     } else {
-                        self.signUpError = nil
-                        completion(nil)
+                        self?.signUpError = "Please verify your email before signing in."
                     }
                 }
             }
         }
     }
-
-    func signIn() {
-        Auth.auth().signIn(withEmail: email, password: password) { result, error in
+    
+    func signUp(completion: @escaping (Error?) -> Void) {
+        Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
-                self.signUpError = error.localizedDescription
+                completion(error)
             } else if let user = result?.user {
-                self.isEmailVerified = user.isEmailVerified
-                self.isAuthenticated = user.isEmailVerified // Update the authentication state
-                if !user.isEmailVerified {
-                    self.signUpError = "Please verify your email before signing in."
+                self.sendEmailVerification(to: user) { error in
+                    if let error = error {
+                        self.signUpError = "Failed to send verification email: \(error.localizedDescription)"
+                    } else {
+                        self.signUpError = "A verification email has been sent to \(self.email). Please verify before signing in."
+                    }
+                    completion(nil)
                 }
             }
         }
     }
-
-    func signOut() {
-        do {
-            try Auth.auth().signOut()
-            self.isAuthenticated = false
-        } catch let error {
-            self.signUpError = error.localizedDescription
-        }
+    
+    private func sendEmailVerification(to user: User, completion: @escaping (Error?) -> Void) {
+        user.sendEmailVerification(completion: completion)
     }
 }

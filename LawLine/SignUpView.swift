@@ -4,11 +4,6 @@ struct SignUpView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var confirmPassword = ""
     
-    // State variables to control the popups
-    @State private var showPasswordMismatchAlert = false
-    @State private var showEmailVerificationAlert = false
-    @State private var showErrorAlert = false
-    
     var body: some View {
         VStack {
             // Image above the "Create a New Account" text
@@ -34,6 +29,13 @@ struct SignUpView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
 
+            // Display error in red, and email verification message in blue
+            if let error = authViewModel.signUpError {
+                Text(error)
+                    .foregroundColor(error.contains("verification email") ? .blue : .red) // Check if it's a verification message
+                    .padding()
+            }
+
             Button(action: {
                 signUp()
             }) {
@@ -46,29 +48,19 @@ struct SignUpView: View {
             .padding()
         }
         .padding()
-        // Show popups (alerts)
-        .alert(isPresented: $showPasswordMismatchAlert) {
-            Alert(title: Text("Error"), message: Text("Passwords do not match"), dismissButton: .default(Text("OK")))
-        }
-        .alert(isPresented: $showEmailVerificationAlert) {
-            Alert(title: Text("Email Verification"), message: Text("A verification email has been sent to \(authViewModel.email). Please verify your email before signing in."), dismissButton: .default(Text("OK")))
-        }
-        .alert(isPresented: $showErrorAlert) {
-            Alert(title: Text("Error"), message: Text(authViewModel.signUpError ?? ""), dismissButton: .default(Text("OK")))
-        }
     }
 
     func signUp() {
         guard authViewModel.password == confirmPassword else {
-            showPasswordMismatchAlert = true // Trigger the password mismatch popup
+            authViewModel.signUpError = "Passwords do not match"
             return
         }
 
         authViewModel.signUp { error in
             if let error = error {
-                showErrorAlert = true // Trigger the error popup
+                authViewModel.signUpError = error.localizedDescription
             } else {
-                showEmailVerificationAlert = true // Trigger the email verification popup
+                authViewModel.signUpError = "A verification email has been sent to \(authViewModel.email). Please verify before signing in."
             }
         }
     }

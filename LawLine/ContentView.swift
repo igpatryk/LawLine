@@ -1,10 +1,11 @@
 import SwiftUI
 
+
 struct ContentView: View {
     @StateObject var authViewModel = AuthViewModel()
 
     var body: some View {
-        if authViewModel.isAuthenticated { // Now this will work as 'isAuthenticated' is part of AuthViewModel
+        if authViewModel.isAuthenticated {
             HelloView()
         } else {
             LoginView()
@@ -14,20 +15,18 @@ struct ContentView: View {
 }
 
 
-
 struct LoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSignUp = false
-    @State private var showEmailNotVerifiedAlert = false
-    
+
     var body: some View {
         VStack {
             // Image above the login form
             Image("icon with text") // Replace "loginImage" with the name of your image asset
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 150, height: 150)
-                .padding(.bottom, 20)
+                .resizable()   // Makes the image resizable
+                .aspectRatio(contentMode: .fit) // Maintains the aspect ratio of the image
+                .frame(width: 150, height: 150) // Adjust the size to fit your design
+                .padding(.bottom, 20) // Add some padding between the image and the form
             
             // Login form
             TextField("Email", text: $authViewModel.email)
@@ -40,9 +39,6 @@ struct LoginView: View {
 
             Button(action: {
                 authViewModel.signIn()
-                if !authViewModel.isEmailVerified {
-                    showEmailNotVerifiedAlert = true // Trigger popup if email is not verified
-                }
             }) {
                 Text("Sign In")
                     .padding()
@@ -51,6 +47,12 @@ struct LoginView: View {
                     .cornerRadius(8)
             }
             .padding()
+
+            if let error = authViewModel.signUpError {
+                Text(error)
+                    .foregroundColor(.red)
+                    .padding()
+            }
 
             Button(action: {
                 showSignUp = true
@@ -64,9 +66,6 @@ struct LoginView: View {
             }
         }
         .padding()
-        // Show popup for unverified email
-        .alert(isPresented: $showEmailNotVerifiedAlert) {
-            Alert(title: Text("Email Verification Required"), message: Text("Please verify your email before signing in."), dismissButton: .default(Text("OK")))
-        }
     }
 }
+
