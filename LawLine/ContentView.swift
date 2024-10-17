@@ -7,6 +7,7 @@ struct ContentView: View {
     var body: some View {
         if authViewModel.isAuthenticated {
             HelloView()
+                .environmentObject(authViewModel) // Przekazujemy AuthViewModel do HelloView
         } else {
             LoginView()
                 .environmentObject(authViewModel)
