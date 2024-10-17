@@ -3,7 +3,9 @@ import SwiftUI
 struct SignUpView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var confirmPassword = ""
-    
+    @State private var alertMessage = ""
+    @State private var showAlert = false
+
     var body: some View {
         VStack {
             // Image above the "Create a New Account" text
@@ -29,13 +31,6 @@ struct SignUpView: View {
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
 
-            // Display error in red, and email verification message in blue
-            if let error = authViewModel.signUpError {
-                Text(error)
-                    .foregroundColor(error.contains("verification email") ? .blue : .red) // Check if it's a verification message
-                    .padding()
-            }
-
             Button(action: {
                 signUp()
             }) {
@@ -48,6 +43,21 @@ struct SignUpView: View {
             .padding()
         }
         .padding()
+        // Alert is presented based on showAlert state
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text(alertMessage.contains("A verification email has been sent to") ? "Thank you!" : "Error"),
+                message: Text(alertMessage), // Keep it simple; you can customize the color in a custom alert if needed
+                dismissButton: .default(Text("OK"))
+            )
+        }
+        // Using the correct onChange syntax for iOS 17
+        .onChange(of: authViewModel.signUpError) {
+            if let error = authViewModel.signUpError {
+                alertMessage = error
+                showAlert = true
+            }
+        }
     }
 
     func signUp() {

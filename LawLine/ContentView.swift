@@ -18,17 +18,17 @@ struct ContentView: View {
 struct LoginView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showSignUp = false
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
     var body: some View {
         VStack {
-            // Image above the login form
-            Image("icon with text") // Replace "loginImage" with the name of your image asset
-                .resizable()   // Makes the image resizable
-                .aspectRatio(contentMode: .fit) // Maintains the aspect ratio of the image
-                .frame(width: 150, height: 150) // Adjust the size to fit your design
-                .padding(.bottom, 20) // Add some padding between the image and the form
+            Image("icon with text")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 150, height: 150)
+                .padding(.bottom, 20)
             
-            // Login form
             TextField("Email", text: $authViewModel.email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
@@ -38,7 +38,7 @@ struct LoginView: View {
                 .padding()
 
             Button(action: {
-                authViewModel.signIn()
+                signIn()
             }) {
                 Text("Sign In")
                     .padding()
@@ -48,24 +48,35 @@ struct LoginView: View {
             }
             .padding()
 
-            if let error = authViewModel.signUpError {
-                Text(error)
-                    .foregroundColor(.red)
-                    .padding()
-            }
-
             Button(action: {
                 showSignUp = true
             }) {
                 Text("Don't have an account? Sign Up")
                     .foregroundColor(.blue)
             }
-            .sheet(isPresented: $showSignUp) {
+            .sheet(isPresented: $showSignUp, onDismiss: {
+                authViewModel.signUpError = nil
+            }) {
                 SignUpView()
                     .environmentObject(authViewModel)
             }
         }
         .padding()
+        .alert(isPresented: $showAlert) {
+            Alert(
+                title: Text("Error"),
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK"))
+            )
+        }
+    }
+
+    private func signIn() {
+        authViewModel.signIn()
+        if let error = authViewModel.signUpError {
+            alertMessage = error
+            showAlert = true
+        }
     }
 }
 

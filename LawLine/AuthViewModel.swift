@@ -10,8 +10,8 @@ class AuthViewModel: ObservableObject {
 
     func signIn() {
         Auth.auth().signIn(withEmail: email, password: password) { [weak self] result, error in
-            if let error = error {
-                print("Error signing in: \(error.localizedDescription)")
+            if let error = error as NSError? {
+                self?.handleSignInError(error)
             } else if let user = result?.user {
                 user.reload { error in
                     self?.isEmailVerified = user.isEmailVerified
@@ -24,7 +24,11 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
-    
+
+    private func handleSignInError(_ error: NSError) {
+        self.signUpError = error.localizedDescription
+    }
+
     func signUp(completion: @escaping (Error?) -> Void) {
         Auth.auth().createUser(withEmail: email, password: password) { result, error in
             if let error = error {
@@ -41,7 +45,7 @@ class AuthViewModel: ObservableObject {
             }
         }
     }
-    
+
     private func sendEmailVerification(to user: User, completion: @escaping (Error?) -> Void) {
         user.sendEmailVerification(completion: completion)
     }
