@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HelloView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var showChatView = false // Dodajemy flagę nawigacji
     
     var body: some View {
         VStack {
@@ -24,6 +25,13 @@ struct HelloView: View {
                     title: "Pomoc AI",
                     imageName: "brain"
                 )
+                .onTapGesture {
+                    showChatView = true
+                }
+                .fullScreenCover(isPresented: $showChatView) {
+                    ChatView() // Prezentacja widoku czatu
+                }
+                
                 FeatureTileView(
                     title: "Kontakt z prawnikiem",
                     imageName: "person.fill"
@@ -52,58 +60,5 @@ struct HelloView: View {
             .background(Color.gray.opacity(0.1))
         }
         .edgesIgnoringSafeArea(.bottom)
-    }
-}
-
-// Kafelki z funkcjami
-struct FeatureTileView: View {
-    var title: String
-    var imageName: String
-
-    var body: some View {
-        VStack {
-            Image(systemName: imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 50, height: 50)
-                .foregroundColor(.white)
-                .padding()
-
-            Text(title)
-                .font(.headline)
-                .foregroundColor(.white)
-                .multilineTextAlignment(.center)
-                .padding([.leading, .trailing], 10)
-        }
-        .frame(width: 160, height: 160)
-        .background(Color.blue)
-        .cornerRadius(15)
-        .shadow(radius: 5)
-    }
-}
-
-// Menu dolne
-struct MenuItemView: View {
-    var title: String
-    var imageName: String
-
-    var body: some View {
-        VStack {
-            Image(systemName: imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundColor(.blue)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.blue)
-        }
-        .frame(maxWidth: .infinity)
-    }
-}
-
-struct HelloView_Previews: PreviewProvider {
-    static var previews: some View {
-        HelloView().environmentObject(AuthViewModel())
     }
 }
