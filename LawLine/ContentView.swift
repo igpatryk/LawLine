@@ -28,7 +28,7 @@ struct LoginView: View {
                 .aspectRatio(contentMode: .fit)
                 .frame(width: 150, height: 150)
                 .padding(.bottom, 20)
-            
+
             TextField("Email", text: $authViewModel.email)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
                 .padding()
@@ -72,11 +72,20 @@ struct LoginView: View {
     }
 
     private func signIn() {
+        // Clear any previous errors before sign-in attempt
+        authViewModel.signUpError = nil
+        showAlert = false
+
         authViewModel.signIn()
-        if let error = authViewModel.signUpError {
-            alertMessage = error
-            showAlert = true
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            // Check if there is any sign-in error after attempt
+            if let error = authViewModel.signUpError {
+                alertMessage = error
+                showAlert = true
+            }
         }
     }
 }
+
 

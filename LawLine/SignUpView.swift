@@ -47,15 +47,18 @@ struct SignUpView: View {
         .alert(isPresented: $showAlert) {
             Alert(
                 title: Text(alertMessage.contains("A verification email has been sent to") ? "Thank you!" : "Error"),
-                message: Text(alertMessage), // Keep it simple; you can customize the color in a custom alert if needed
-                dismissButton: .default(Text("OK"))
+                message: Text(alertMessage),
+                dismissButton: .default(Text("OK")) {
+                    // Reset alert state after dismissing
+                    authViewModel.signUpError = nil
+                }
             )
         }
-        // Using the correct onChange syntax for iOS 17
         .onChange(of: authViewModel.signUpError) {
             if let error = authViewModel.signUpError {
+                // Trigger alert update only when a new error occurs
                 alertMessage = error
-                showAlert = true
+                showAlert = true // Ensure alert is shown on every error
             }
         }
     }
