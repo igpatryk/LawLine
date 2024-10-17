@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		F107FC5A2CC1103C005C48A7 /* GoogleGenerativeAI in Frameworks */ = {isa = PBXBuildFile; productRef = F107FC592CC1103C005C48A7 /* GoogleGenerativeAI */; };
 		F1D0B2A42CBFDD100015FEBF /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = F1D0B2A32CBFDD100015FEBF /* FirebaseAnalytics */; };
 		F1D0B2A62CBFDD100015FEBF /* FirebaseAnalyticsOnDeviceConversion in Frameworks */ = {isa = PBXBuildFile; productRef = F1D0B2A52CBFDD100015FEBF /* FirebaseAnalyticsOnDeviceConversion */; };
 		F1D0B2A82CBFDD100015FEBF /* FirebaseAnalyticsWithoutAdIdSupport in Frameworks */ = {isa = PBXBuildFile; productRef = F1D0B2A72CBFDD100015FEBF /* FirebaseAnalyticsWithoutAdIdSupport */; };
@@ -84,6 +85,7 @@
 				F1D0B2C52CBFE49B0015FEBF /* FirebaseFunctions in Frameworks */,
 				F1D0B2D12CBFE49B0015FEBF /* FirebasePerformance in Frameworks */,
 				F1D0B2D72CBFE49B0015FEBF /* FirebaseStorageCombine-Community in Frameworks */,
+				F107FC5A2CC1103C005C48A7 /* GoogleGenerativeAI in Frameworks */,
 				F1D0B2D32CBFE49B0015FEBF /* FirebaseRemoteConfig in Frameworks */,
 				F1D0B2BD2CBFE49B0015FEBF /* FirebaseDatabase in Frameworks */,
 				F1D0B2BF2CBFE49B0015FEBF /* FirebaseDynamicLinks in Frameworks */,
@@ -187,6 +189,7 @@
 				F1D0B2D42CBFE49B0015FEBF /* FirebaseStorage */,
 				F1D0B2D62CBFE49B0015FEBF /* FirebaseStorageCombine-Community */,
 				F1D0B2D82CBFE49B0015FEBF /* FirebaseVertexAI-Preview */,
+				F107FC592CC1103C005C48A7 /* GoogleGenerativeAI */,
 			);
 			productName = LawLine;
 			productReference = F1C3CB7A2CA9493800A989DC /* LawLine.app */;
@@ -272,6 +275,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				F1D0B2A22CBFDD100015FEBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				F107FC582CC1103C005C48A7 /* XCRemoteSwiftPackageReference "generative-ai-swift" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = F1C3CB7B2CA9493800A989DC /* Products */;
@@ -634,6 +638,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		F107FC582CC1103C005C48A7 /* XCRemoteSwiftPackageReference "generative-ai-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/google/generative-ai-swift";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.5.6;
+			};
+		};
 		F1D0B2A22CBFDD100015FEBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk.git";
@@ -645,6 +657,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		F107FC592CC1103C005C48A7 /* GoogleGenerativeAI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = F107FC582CC1103C005C48A7 /* XCRemoteSwiftPackageReference "generative-ai-swift" */;
+			productName = GoogleGenerativeAI;
+		};
 		F1D0B2A32CBFDD100015FEBF /* FirebaseAnalytics */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = F1D0B2A22CBFDD100015FEBF /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;

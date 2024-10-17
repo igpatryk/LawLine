@@ -5,6 +5,9 @@
 ## Firebase config
 LawLine/GoogleService-Info.plist
 
+## Gemini config
+LawLine/GenerativeAI-Info.plist
+
 ## User settings
 xcuserdata/
 
