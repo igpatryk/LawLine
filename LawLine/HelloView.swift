@@ -1,8 +1,8 @@
 import SwiftUI
-
 struct HelloView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
-    @State private var showChatView = false // Dodajemy flagę nawigacji
+    @State private var showChatView = false
+    @State private var showPDFViewer = false
     
     var body: some View {
         VStack {
@@ -23,13 +23,13 @@ struct HelloView: View {
             HStack {
                 FeatureTileView(
                     title: "Pomoc AI",
-                    imageName: "brain"
+                    imageName: "brain.fill"
                 )
                 .onTapGesture {
                     showChatView = true
                 }
                 .fullScreenCover(isPresented: $showChatView) {
-                    ChatView() // Prezentacja widoku czatu
+                    ChatView()
                 }
                 
                 FeatureTileView(
@@ -44,6 +44,9 @@ struct HelloView: View {
                     title: "Kodeks karny",
                     imageName: "book.fill"
                 )
+                .onTapGesture {
+                    showPDFViewer = true
+                }
             }
             .padding()
 
@@ -53,12 +56,34 @@ struct HelloView: View {
             HStack {
                 MenuItemView(title: "Strona główna", imageName: "house.fill")
                 MenuItemView(title: "Historia", imageName: "message.fill")
-                MenuItemView(title: "Kodeks prawny", imageName: "book.fill")
+                MenuItemView(
+                    title: "Kodeks Karny",
+                    imageName: "book.fill"
+                )
+                .onTapGesture {
+                    showPDFViewer = true
+                }
                 MenuItemView(title: "Ustawienia", imageName: "gearshape.fill")
             }
             .padding()
             .background(Color.gray.opacity(0.1))
         }
         .edgesIgnoringSafeArea(.bottom)
+        .fullScreenCover(isPresented: $showPDFViewer) {
+            NavigationView {
+                if let pdfURL = Bundle.main.url(forResource: "kodeks_karny", withExtension: "pdf") {
+                    PDFViewerView(pdfURL: pdfURL)
+                        .navigationBarTitle("Kodeks Karny", displayMode: .inline)
+                        .navigationBarItems(trailing: Button("Zamknij") {
+                            showPDFViewer = false
+                        })
+                } else {
+                    Text("Nie można znaleźć pliku PDF")
+                        .navigationBarItems(trailing: Button("Zamknij") {
+                            showPDFViewer = false
+                        })
+                }
+            }
+        }
     }
 }
