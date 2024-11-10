@@ -13,6 +13,10 @@ struct Message: Identifiable {
 }
 
 struct ChatView: View {
+    
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @StateObject private var historyViewModel = ChatHistoryViewModel()
+    @State private var currentConversationId: String?
     let model = GenerativeModel(name: "gemini-1.5-flash", apiKey: APIKey.default)
     private let systemMessage = "Jesteś pomocnikiem w aplikacji z poradami prawnymi. Gdy moje zapytanie będzie dotyczyło czegoś innego niż porada prawna, odpowiedz 'Nie jestem w stanie ci z tym pomóc - jestem tylko pomocnikiem prawnym. Czy jest coś innego, w czym mogę ci pomóc?'. Jeśli moje zapytanie będzie dotyczyło porady prawnej, podeprzyj swoją odpowiedź linkami do źródeł, takich jak fora prawne, kodeksy prawne itp i zakończ wiadomość tekstem 'Pamiętaj, że powyższe informacje mają charakter jedynie informacyjny i nie stanowią porady prawnej. W razie potrzeby skonsultuj się z prawnikiem'. Nie używaj formatowania tekstu, takiego jak pogrubienia itp. Przy formatowaniu list, używaj '-' zamiast '*', jako oznaczenie elementu listy."
     @State var aiResponse = ""
@@ -73,6 +77,10 @@ struct ChatView: View {
             .navigationBarItems(trailing: Button("Zamknij") {
                 dismiss()
             })
+            .onAppear {
+                currentConversationId = historyViewModel.startNewConversation()
+            }
+
         }
     }
     
@@ -81,6 +89,7 @@ struct ChatView: View {
         
         let userMessage = Message(text: userInput, isUserMessage: true)
         messages.append(userMessage)
+        historyViewModel.saveMessage(userMessage, userEmail: authViewModel.email)
         
         let currentUserInput = userInput
         userInput = ""
@@ -128,8 +137,10 @@ struct ChatView: View {
     private func handleAIResponse(_ text: String) {
         let aiMessage = Message(text: text, isUserMessage: false)
         messages.append(aiMessage)
+        historyViewModel.saveMessage(aiMessage, userEmail: authViewModel.email)
         isLoading = false
     }
+
 }
 
 struct MessageBubble: View {

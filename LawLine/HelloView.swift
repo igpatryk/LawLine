@@ -3,6 +3,7 @@ struct HelloView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
     @State private var showChatView = false
     @State private var showPDFViewer = false
+    @State private var showHistoryView = false
     
     var body: some View {
         VStack {
@@ -55,15 +56,25 @@ struct HelloView: View {
             // Menu dolne
             HStack {
                 MenuItemView(title: "Strona główna", imageName: "house.fill")
-                MenuItemView(title: "Historia", imageName: "message.fill")
+                MenuItemView(
+                    title: "Historia",
+                    imageName: "message.fill",
+                    action: {
+                        showHistoryView = true
+                    }
+                )
                 MenuItemView(
                     title: "Kodeks Karny",
-                    imageName: "book.fill"
+                    imageName: "book.fill",
+                    action: {
+                        showPDFViewer = true
+                    }
                 )
-                .onTapGesture {
-                    showPDFViewer = true
-                }
                 MenuItemView(title: "Ustawienia", imageName: "gearshape.fill")
+            }
+            .sheet(isPresented: $showHistoryView) {
+                HistoryView()
+                    .environmentObject(authViewModel)
             }
             .padding()
             .background(Color.gray.opacity(0.1))

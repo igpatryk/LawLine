@@ -3,18 +3,22 @@ import SwiftUI
 struct MenuItemView: View {
     var title: String
     var imageName: String
-
+    var action: (() -> Void)?
+    
     var body: some View {
-        VStack {
-            Image(systemName: imageName)
-                .resizable()
-                .scaledToFit()
-                .frame(width: 24, height: 24)
-                .foregroundColor(.blue)
-            Text(title)
-                .font(.caption)
-                .foregroundColor(.blue)
+        Button(action: {
+            action?()
+        }) {
+            VStack {
+                Image(systemName: imageName)
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 25, height: 25)
+                Text(title)
+                    .font(.caption)
+            }
+            .foregroundColor(.gray)
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity)
     }
 }
