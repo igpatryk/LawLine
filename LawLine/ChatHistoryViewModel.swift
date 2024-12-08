@@ -2,7 +2,7 @@ import Foundation
 import FirebaseFirestore
 import FirebaseAuth
 
-struct Conversation: Identifiable {
+struct Conversation: Identifiable, Equatable {
     let id: String
     let startTime: Date
     let userEmail: String
@@ -15,18 +15,26 @@ struct Conversation: Identifiable {
     var lastUpdateTime: Date {
         messages.last?.timestamp ?? startTime
     }
+    
+    static func == (lhs: Conversation, rhs: Conversation) -> Bool {
+        return lhs.id == rhs.id
+    }
 }
 
 class ChatHistoryViewModel: ObservableObject {
     @Published var conversations: [Conversation] = []
     private let db = Firestore.firestore()
     private var currentConversationId: String?
+    private var messageListeners: [String: ListenerRegistration] = [:]
+    
+    func setCurrentConversationId(_ id: String) {
+        currentConversationId = id
+    }
     
     func saveMessage(_ message: Message, userEmail: String) {
         guard let conversationId = currentConversationId else {
-            // If no conversation is active, create a new one
             currentConversationId = startNewConversation()
-            saveMessage(message, userEmail: userEmail) // Retry with new conversation
+            saveMessage(message, userEmail: userEmail)
             return
         }
         
@@ -37,7 +45,6 @@ class ChatHistoryViewModel: ObservableObject {
             userEmail: userEmail
         )
         
-        // Update conversation's last message time
         db.collection("conversations")
             .document(conversationId)
             .setData([
@@ -46,7 +53,6 @@ class ChatHistoryViewModel: ObservableObject {
                 "startTime": FieldValue.serverTimestamp()
             ], merge: true)
         
-        // Save the message
         do {
             try db.collection("conversations")
                 .document(conversationId)
@@ -56,47 +62,62 @@ class ChatHistoryViewModel: ObservableObject {
             print("Error saving message: \(error.localizedDescription)")
         }
     }
-    
+
     func loadConversations(for userEmail: String) {
-        db.collection("conversations")
-            .whereField("userEmail", isEqualTo: userEmail)
-            .order(by: "lastUpdateTime", descending: true)
-            .addSnapshotListener { [weak self] snapshot, error in
-                if let error = error {
-                    print("Error loading conversations: \(error.localizedDescription)")
-                    return
+            db.collection("conversations")
+                .whereField("userEmail", isEqualTo: userEmail)
+                .order(by: "lastUpdateTime", descending: true)
+                .addSnapshotListener { [weak self] snapshot, error in
+                    if let error = error {
+                        print("Error loading conversations: \(error.localizedDescription)")
+                        return
+                    }
+                    
+                    guard let documents = snapshot?.documents else { return }
+                    
+                    // Keep track of current conversation IDs
+                    var currentIds = Set<String>()
+                    
+                    for document in documents {
+                        let conversationId = document.documentID
+                        currentIds.insert(conversationId)
+                        let data = document.data()
+                        
+                        let startTime = (data["startTime"] as? Timestamp)?.dateValue() ?? Date()
+                        let userEmail = data["userEmail"] as? String ?? ""
+                        
+                        // Check if conversation already exists
+                        let conversationExists = self?.conversations.contains(where: { $0.id == conversationId }) ?? false
+                        if !conversationExists {
+                            // Only create new conversation if it doesn't exist
+                            let conversation = Conversation(
+                                id: conversationId,
+                                startTime: startTime,
+                                userEmail: userEmail,
+                                messages: []
+                            )
+                            self?.loadMessages(for: conversation)
+                        }
+                    }
+                    
+                    // Remove conversations that no longer exist
+                    self?.conversations.removeAll(where: { !currentIds.contains($0.id) })
+                    
+                    // Clean up listeners for removed conversations
+                    self?.messageListeners.forEach { id, listener in
+                        if !currentIds.contains(id) {
+                            listener.remove()
+                            self?.messageListeners.removeValue(forKey: id)
+                        }
+                    }
                 }
-                
-                guard let documents = snapshot?.documents else { return }
-                
-                // Clear existing conversations
-                self?.conversations.removeAll()
-                
-                // Load messages for each conversation
-                for document in documents {
-                    let conversationId = document.documentID
-                    let data = document.data()
-                    
-                    // Get conversation metadata
-                    let startTime = (data["startTime"] as? Timestamp)?.dateValue() ?? Date()
-                    let userEmail = data["userEmail"] as? String ?? ""
-                    
-                    // Create temporary conversation
-                    let conversation = Conversation(
-                        id: conversationId,
-                        startTime: startTime,
-                        userEmail: userEmail,
-                        messages: []
-                    )
-                    
-                    // Load messages for this conversation
-                    self?.loadMessages(for: conversation)
-                }
-            }
-    }
+        }
     
     private func loadMessages(for conversation: Conversation) {
-        db.collection("conversations")
+        // Remove existing listener if any
+        messageListeners[conversation.id]?.remove()
+        
+        let listener = db.collection("conversations")
             .document(conversation.id)
             .collection("messages")
             .order(by: "timestamp")
@@ -112,27 +133,29 @@ class ChatHistoryViewModel: ObservableObject {
                     try? document.data(as: ChatMessage.self)
                 }
                 
-                // Only add conversation if it has messages
-                if !messages.isEmpty {
-                    DispatchQueue.main.async {
+                DispatchQueue.main.async {
+                    if let index = self?.conversations.firstIndex(where: { $0.id == conversation.id }) {
+                        // Update messages for existing conversation
+                        self?.conversations[index].messages = messages
+                    } else if !messages.isEmpty {
+                        // Add new conversation
                         let updatedConversation = Conversation(
                             id: conversation.id,
                             startTime: conversation.startTime,
                             userEmail: conversation.userEmail,
                             messages: messages
                         )
-                        
-                        // Remove existing conversation with same ID if exists
-                        self?.conversations.removeAll(where: { $0.id == conversation.id })
-                        // Add updated conversation
                         self?.conversations.append(updatedConversation)
-                        // Sort conversations by last message time
-                        self?.conversations.sort(by: { $0.lastUpdateTime > $1.lastUpdateTime })
-                        
-                        self?.objectWillChange.send()
                     }
+                    
+                    // Sort conversations by last message time
+                    self?.conversations.sort(by: { $0.lastUpdateTime > $1.lastUpdateTime })
+                    self?.objectWillChange.send()
                 }
             }
+        
+        // Store the listener
+        messageListeners[conversation.id] = listener
     }
     
     func startNewConversation() -> String? {
@@ -153,5 +176,10 @@ class ChatHistoryViewModel: ObservableObject {
     
     func getCurrentConversationId() -> String? {
         return currentConversationId
+    }
+    
+    deinit {
+        // Clean up all listeners when view model is deallocated
+        messageListeners.values.forEach { $0.remove() }
     }
 }

@@ -43,8 +43,8 @@ struct LoginView: View {
             }) {
                 Text("Sign In")
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(Color.black)
+                    .foregroundColor(Color(red: 0.96, green: 0.93, blue: 0.88))
                     .cornerRadius(8)
             }
             .padding()
@@ -53,7 +53,7 @@ struct LoginView: View {
                 showSignUp = true
             }) {
                 Text("Don't have an account? Sign Up")
-                    .foregroundColor(.blue)
+                    .foregroundColor(.black)
             }
             .sheet(isPresented: $showSignUp, onDismiss: {
                 authViewModel.signUpError = nil

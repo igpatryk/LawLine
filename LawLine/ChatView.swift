@@ -13,12 +13,15 @@ struct Message: Identifiable {
 }
 
 struct ChatView: View {
+    var existingConversationId: String? = nil
+    var existingMessages: [ChatMessage]? = nil
+    var showNavigation: Bool = true
     
     @EnvironmentObject var authViewModel: AuthViewModel
     @StateObject private var historyViewModel = ChatHistoryViewModel()
     @State private var currentConversationId: String?
     let model = GenerativeModel(name: "gemini-1.5-flash", apiKey: APIKey.default)
-    private let systemMessage = "Jesteś pomocnikiem w aplikacji z poradami prawnymi. Gdy moje zapytanie będzie dotyczyło czegoś innego niż porada prawna, odpowiedz 'Nie jestem w stanie ci z tym pomóc - jestem tylko pomocnikiem prawnym. Czy jest coś innego, w czym mogę ci pomóc?'. Jeśli moje zapytanie będzie dotyczyło porady prawnej, podeprzyj swoją odpowiedź linkami do źródeł, takich jak fora prawne, kodeksy prawne itp i zakończ wiadomość tekstem 'Pamiętaj, że powyższe informacje mają charakter jedynie informacyjny i nie stanowią porady prawnej. W razie potrzeby skonsultuj się z prawnikiem'. Nie używaj formatowania tekstu, takiego jak pogrubienia itp. Przy formatowaniu list, używaj '-' zamiast '*', jako oznaczenie elementu listy."
+    private let systemMessage = "Jesteś pomocnikiem w aplikacji z poradami prawnymi. Gdy moje zapytanie będzie dotyczyło czegoś innego niż porada prawna, odpowiedz 'Nie jestem w stanie ci z tym pomóc - jestem tylko pomocnikiem prawnym. Czy jest coś innego, w czym mogę ci pomóc?'. Jeśli moje zapytanie będzie dotyczyło porady prawnej, podeprzyj swoją odpowiedź linkami do źródeł, takich jak fora prawne, kodeksy prawne itp i zakończ wiadomość tekstem 'Pamiętaj, że powyższe informacje mają charakter jedynie informacyjny i nie stanowią porady prawnej. W razie potrzeby skonsultuj się z prawnikiem'. Nie używaj formatowania tekstu, takiego jak pogrubienia itp. Przy formatowaniu list, używaj '-' zamiast '*', jako oznaczenie elementu listy."
     @State var aiResponse = ""
     @State private var messages: [Message] = [
         Message(text: "W czym mogę Ci pomóc?", isUserMessage: false)
@@ -28,7 +31,19 @@ struct ChatView: View {
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        NavigationView {
+        Group {
+            if showNavigation {
+                NavigationView {
+                    chatContent
+                }
+            } else {
+                chatContent
+            }
+        }
+    }
+    
+    private var chatContent: some View {
+        ZStack {
             VStack {
                 ScrollView {
                     ScrollViewReader { scrollView in
@@ -36,16 +51,6 @@ struct ChatView: View {
                             ForEach(messages) { message in
                                 MessageBubble(message: message)
                                     .id(message.id)
-                            }
-                            
-                            if isLoading {
-                                HStack {
-                                    ProgressView()
-                                        .padding()
-                                    Text("AI pisze...")
-                                        .foregroundColor(.gray)
-                                    Spacer()
-                                }
                             }
                         }
                         .padding()
@@ -72,15 +77,41 @@ struct ChatView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Pomoc AI")
-            .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(trailing: Button("Zamknij") {
-                dismiss()
-            })
-            .onAppear {
-                currentConversationId = historyViewModel.startNewConversation()
+            
+            if isLoading {
+                VStack {
+                    Spacer()
+                    HStack {
+                        ProgressView()
+                            .padding()
+                        Text("AI pisze...")
+                            .foregroundColor(.gray)
+                        Spacer()
+                    }
+                    .background(Color.white.opacity(0.9))
+                    .padding(.bottom, 60)
+                }
             }
-
+        }
+        .navigationTitle("Pomoc AI")
+        .navigationBarTitleDisplayMode(.inline)
+        .navigationBarItems(trailing: showNavigation ? Button("Zamknij") {
+            dismiss()
+        } : nil)
+        .onAppear {
+            if let existingConversationId = existingConversationId {
+                currentConversationId = existingConversationId
+                historyViewModel.setCurrentConversationId(existingConversationId)
+                
+                if let existingMessages = existingMessages {
+                    self.messages = existingMessages.map { chatMessage in
+                        Message(text: chatMessage.text, isUserMessage: chatMessage.isUserMessage)
+                    }
+                }
+            } else {
+                currentConversationId = historyViewModel.startNewConversation()
+                messages = [Message(text: "W czym mogę Ci pomóc?", isUserMessage: false)]
+            }
         }
     }
     
@@ -94,17 +125,14 @@ struct ChatView: View {
         let currentUserInput = userInput
         userInput = ""
         isLoading = true
-
         fetchAIResponseWithHistory(currentUserInput)
     }
     
     func fetchAIResponseWithHistory(_ currentUserInput: String) {
         Task {
             do {
-                // Start with system message
                 var conversationLines = [systemMessage]
                 
-                // Add "Previous conversation:" only if there are previous messages
                 if !messages.dropLast().isEmpty {
                     conversationLines.append("\nPrevious conversation:")
                     for message in messages.dropLast() {
@@ -140,7 +168,6 @@ struct ChatView: View {
         historyViewModel.saveMessage(aiMessage, userEmail: authViewModel.email)
         isLoading = false
     }
-
 }
 
 struct MessageBubble: View {

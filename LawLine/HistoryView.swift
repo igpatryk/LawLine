@@ -4,6 +4,7 @@ struct HistoryView: View {
     @StateObject private var viewModel = ChatHistoryViewModel()
     @EnvironmentObject var authViewModel: AuthViewModel
     @Environment(\.dismiss) private var dismiss
+    @State private var selectedConversation: Conversation?
     
     var body: some View {
         NavigationView {
@@ -17,7 +18,9 @@ struct HistoryView: View {
                 } else {
                     List {
                         ForEach(viewModel.conversations) { conversation in
-                            NavigationLink(destination: ConversationDetailView(messages: conversation.messages)) {
+                            NavigationLink {
+                                ConversationView(conversation: conversation)
+                            } label: {
                                 ConversationPreview(conversation: conversation)
                             }
                         }
@@ -59,15 +62,16 @@ struct ConversationPreview: View {
     }
 }
 
-struct ConversationDetailView: View {
-    let messages: [ChatMessage]
+struct ConversationView: View {
+    let conversation: Conversation
+    @State private var showingChatView = false
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
-        ScrollViewReader { scrollProxy in
+        VStack {
             ScrollView {
                 LazyVStack(spacing: 10) {
-                    ForEach(messages) { message in
+                    ForEach(conversation.messages) { message in
                         HStack {
                             if message.isUserMessage {
                                 Spacer()
@@ -86,15 +90,29 @@ struct ConversationDetailView: View {
                                 Spacer()
                             }
                         }
-                        .id(message.id)
                     }
                 }
                 .padding()
             }
+            NavigationLink {
+                ChatView(
+                    existingConversationId: conversation.id,
+                    existingMessages: conversation.messages,
+                    showNavigation: false  // Hide navigation when pushed from ConversationView
+                )
+            } label: {
+                HStack {
+                    Image(systemName: "arrow.right.circle.fill")
+                    Text("Kontynuuj rozmowę")
+                }
+                .padding()
+                .background(Color.blue)
+                .foregroundColor(.white)
+                .cornerRadius(10)
+            }
+            .padding(.bottom)
         }
-        .navigationBarItems(trailing: Button("Zamknij") {
-            dismiss()
-        })
-        .navigationBarTitle("Czat", displayMode: .inline)
+        .navigationTitle("Czat")
+        .navigationBarTitleDisplayMode(.inline)
     }
 }
